@@ -1,0 +1,7 @@
+S_1_T_1
+S_3_T_3
+S_2_T_3
+S_4_T_2
+Time: 11
+Space: Frontier 11 ,Visited 9
+Cost (Maximum Monitoring Time)100
