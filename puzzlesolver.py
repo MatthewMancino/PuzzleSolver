@@ -13,16 +13,19 @@ def main():
         if (lines[0] == "monitor"):
             sensor_array = f.readline()
         elif (lines[0] == "aggregation"):
+            data_aggreation = f.readline()
 
     f.close()
     if (algo == "bfs"):
         bfs()
-    elif algo == "iddfs"):
-        ucs_solve()
+    elif (algo == "iddfs"):
+        iddfs()
     elif(algo == "ucs"):
-        iddfs_solve()
+        ucs()
     elif (algo == "greedy"):
+        greedy()
     elif (algo == "Astar"):
+        astar()
 
     return
 if __name__ == "__main__":
@@ -32,19 +35,15 @@ def bfs(nodes, edges):
     # Utilize a fifo queue for BFS search and separate into two different problem classes
     q = Queue()
     start_state = nodes[0]
-
-
-def goal_test():
-
-def get_successive_states():
-
-def ucs_solve(nodes, edges):
+def iddfs(nodes, edges):
+    #Use stack because of a DFS subsearch problem
+def astar(nodes, edges):
+    #
+def greedy(nodes, edges):
+    #
+def ucs(nodes, edges):
     # Utilize Priority Queue with weights on the Euclidean distance between two points
 
-
-
-def iddfs_solve(nodes, edges):
-    #Use stack because of a DFS subsearch problem
 
 
 class Sensor:
@@ -72,6 +71,8 @@ class Node:
     def setNextNode(y):
         nextNode = y
         return y;
+
+class State:
 class UndirectedEdge:
     time_delay = None; node_one = None; node_two = None;
 
