@@ -1,0 +1,6 @@
+N_1
+N_3
+N_2
+Time: 11
+Space: Frontier 12 ,Visited 4
+Cost 9
