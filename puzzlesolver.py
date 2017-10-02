@@ -3,11 +3,75 @@ import sys
 import Queue
 import ast
 import sets
-from myimport import *
 from scipy.spatial import distance
 
+class Sensor:
+    name = None; xLoc = None; yLoc = None; power_remaining = None;
+    def __init__(self,name,x,y,po):
+        self.name = name; self.xLoc = x; self.yLoc = y; self.power_remaining = po;
 
-distance_values = {};
+class Target:
+    name = None; xLoc = None; yLoc = None;
+    def __init__(self,id,x,y):
+        self.name = id; self.xLoc = x; self.yLoc = y
+    def updateLoc(self,x,y):
+        self.xLoc = x; self.yLoc = y;
+
+class graphNode:
+    name = None; xLoc = None; yLoc = None;
+    def __init__(self,id,x,y):
+        self.name = id; self.xLoc = x; self.yLoc = y
+
+class graphEdge:
+    name = None; cost = None; g1 = None; g2 = None;
+    def __init__(self,g1,g2,co):
+        self.g1 = g1; self.g2 = g2;self.cost = co;
+
+
+class State:
+    target_map = None;
+    sensor_map = None;
+    def __init__(self,sensors,targets):
+        target = {targets[0].name:None,targets[1].name:None,targets[2].name:None}
+        sensors = {sensors[0].name:None,sensors[1].name:None,sensors[2].name:None, sensors[3].name:None}
+
+
+class Node(State):
+    visited = False;
+    parentNode = None;
+    depth = 0;
+    pathCost = 0;
+    action = None;
+    neighbors = None;
+
+    def __init__(self,o_t,o_s,p_node,dep,pCost,act):
+        self.sensor_map = o_s;self.target_map = o_t;self.parentNode = p_node; self.depth = dep + 1; self.pathCost = pCost; self.action = act;
+    def printState():
+        print target_map; print sensor_map;
+    def neighbor(n):
+        neighbors = n;
+        return neighbors;
+
+
+class dataNode(Node):
+    pathList = None;
+    def __init__(self,pathList,pCost,act):
+        self.pathList = pathList; self.pathCost = pCost; self.action = act;
+
+
+
+class UndirectedEdge:
+    parent_node = None; child_node = None;
+    def __init__(self,p,c):
+        parent_node = p; child_node = c;
+
+
+    def getChild(node_no):
+        return child_node
+
+    #########
+
+distance_values = {};nodes = []; edges = {};
 
 ############ HELPER FUNCTIONS FOR TARGET-SENSOR PROBLEM
 def create_sensors(sense):
@@ -29,7 +93,7 @@ def calc_ed(targets,sensors):
 
 ########### MAIN SEARCH ALGORITHMS + FUNCTIONS INDEPENDENT OF PROBLEMS
 
-def bfs(initialState,problem,dist):
+def bfs(initialState,problem):
     # Utilize a FIFO queue for BFS search and separate into two different problem classes
     explored = sets.Set()
     front = sets.Set()
@@ -46,7 +110,7 @@ def bfs(initialState,problem,dist):
             print("Time as expressed in nodes: " ,len(front))
             print("Space(expressed as frontier + explored)",len(front),len(explored))
             return True
-        ss = successor_function(state,problem,dist)
+        ss = successor_function(state,problem)
         for x in ss:
             if(x not in front):
                 if (x not in explored):
@@ -105,6 +169,12 @@ def goal_state(current, problem):
 
         print t_map;
         return True;
+    elif(problem == "aggregation"):
+        if (len(current.pathList) >= len(nodes)-1):
+            return True;
+        else:
+            return False;
+
 
 def successor_function(current, problem):
     #Create a function that takes the current state and the problem and returns corresponding actions
@@ -132,6 +202,21 @@ def successor_function(current, problem):
                         successors.add(Node(newT_map,newS_map,current,current.depth + 1,current.pathCost + pc,action))
                         # print("Target being tracked", t_map);
 
+
+    elif(problem == "aggregation"):
+        pathList = current.pathList  #Get the most recent path list
+
+        global nodes
+        global edges
+        for s in nodes:             #First iteration through the graph
+            for y in nodes:             #Second iteration through the graph
+                if (y[0] != s[0]):          # If they are the same node, ignore
+                    if(y[0]+s[0] in edges):       #If there is an edge between them
+                        newPathList = pathList.copy()
+                        newPathList.append((s[0],edges[y[0]+s[0]],y[0]));
+                        successors.add(dataNode(newPathList,current.pathCost + edges[y[0]+s[0]],y[0]+s[0]));
+
+
     return successors;
 
 
@@ -139,7 +224,6 @@ def successor_function(current, problem):
 
 def main():
 
-    nodes = 0;
     configuration_file = sys.argv[1]
     algo = sys.argv[2]
     print configuration_file
@@ -180,12 +264,22 @@ def main():
             print distance_values
             initialState = Node(original_target_map,original_sensor_map,None,0,0,None)
         elif (lines[0] == "aggregation"):
-            edges = [5]
-            nodes = list(ast.literal_eval(lines[1]))
-            for x in range(0,len(lines)):
-                print x
-                edges[x] = list(ast.literal_eval(lines[x+2]));
-            print nodes, edges
+
+            node_list = list(ast.literal_eval(lines[1]))
+            edge_list = []
+            for x in range(2,5):
+                edge_list.append(list(ast.literal_eval(lines[x])));
+
+            global nodes
+            global edges
+            for a in node_list: #for each node, append it to the list of nodes
+                nodes.append((a[0],a[1],a[2]))
+            for b in edge_list:
+                edges[b[0]+b[1]] = b[2]
+
+            initialState = dataNode([],0,None)
+
+
         elif (lines[0] == "pancakes"):
             array = f.readline()
     f.close()
@@ -211,11 +305,3 @@ def main():
     return
 if __name__ == "__main__":
     main()
-
-
-# def iddfs(initialState):
-#     #Use stack because of a DFS subsearch problem
-# def astar(initialState):
-#     #
-# def greedy(initialState):
-#     #
