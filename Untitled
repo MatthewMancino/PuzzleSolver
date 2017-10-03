@@ -1,4 +1,0 @@
-Heuristic Function Used: For monitor problem I used the heuristic of the sum of euclidean distances between the all the sensors and all the targets.
-For the aggregation problem I used a different version of the problem
-
-This is version one of my puzzlesolver.py and I would like to submit an additional file before midnight

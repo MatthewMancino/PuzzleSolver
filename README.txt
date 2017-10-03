@@ -14,3 +14,4 @@ For the aggregation problem, the path with the shortest time delay is the goal s
 For the pancake problem, the configuration of pancakes with every pancake in order is the goal state
 
 The heuristic for the monitor problem is the sum of the euclidean distance between the sensors and targets
+The heuristic for the aggregation problem of the data aggregation is the 
