@@ -1,21 +1,16 @@
-Author: Matthew Mancino
-Submission Entry: 1.0
-Python Version Used: 2.7
-Additional Python libraries used? N/A
+Heuristic Function Used: For monitor problem I used the heuristic of the sum of euclidean distances between the all the sensors and all the targets.
+For the aggregation problem I used a different version of the problem
 
-Description: I used the Queue class from the Python Queue package to build out the BFS and UCS implementation.
-As discussed in class, the BFS and UCS use FIFO Queues to keep track of the current search
-throughout the search space. Additionally, I used a stack to building of the IDDFS solution.
+This is version one of my puzzlesolver.py and I would like to submit an additional file before midnight
+
+Python Version: 2.7
+Python Libraries: Standard Docs
+I consulted a YouTube video with Bill Gates and the flapjack problem
+Final Submission
 
 
-For the sensor problem, I designed it so the initial state to be the sensor and
-  For a BFS solution, the search algorithm would search through until it found the edge (InfraredBeam) with the shortest
-    Euclidean distance between the sensor and the target.
-  For the UCS solution, the search algorithm would search the same way however the data structure used would be a PQ
-   with the Power loss function used as evaluating a path cost.
-  For the IDDFS solution, the 
+For the monitor problem, the configuration with the longest monitoring time is the goal state
+For the aggregation problem, the path with the shortest time delay is the goal state
+For the pancake problem, the configuration of pancakes with every pancake in order is the goal state
 
-For the data aggregation problem,
-  For the BFS solution,
-  For the UCS solution,
-  For the IDDFS solution,
+The heuristic for the monitor problem is the sum of the euclidean distance between the sensors and targets
