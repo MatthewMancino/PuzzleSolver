@@ -4,7 +4,10 @@ import Queue
 import ast
 import sets
 from scipy.spatial import distance
+import math
 
+total_cost_incurred = 0;
+data_distances = {};
 class Sensor:
     name = None; xLoc = None; yLoc = None; power_remaining = None;
     def __init__(self,name,x,y,po):
@@ -48,9 +51,12 @@ class Node(State):
     StateHeuristic = None;
     maxT = 0;
     no = 0;
+    sumCost = 0;
+    a = None;
 
-    def __init__(self,o_t,o_s,p_node,dep,pCost):
-        self.sensor_map = o_s;self.target_map = o_t;self.parentNode = p_node; self.depth = dep; self.pathCost = pCost;
+    def __init__(self,o_t,o_s,dep,pCost,no,act):
+        self.sensor_map = o_s;self.target_map = o_t; self.depth = dep; self.pathCost = pCost;
+        self.no = no;self.action = act;
     def printState():
         print target_map; print sensor_map;
     def neighbor(n):
@@ -69,8 +75,8 @@ class Node(State):
         x_o = 0
         for t in range(1,max(sensors_power.values())):           #time interval 1 to 1000
             x_o += 1
-            for sName in sensor_test_keys:            #for each sensor, subtract the ed at each time interval
-                if (sensor_test_map[sName] != None):    #If sensor is pointing to a target
+            for sName in sensor_test_keys:            #for each sensor
+                if (sensor_test_map[sName] != None):    #If sensor is pointing to a target, then subtract distance from power remaining
                     pRemaining[sName] = pRemaining[sName] - distance_values[sName+sensor_test_map[sName]]
                 if ((pRemaining[sName] <= 0) & (sensor_test_map[sName] != None)): #if the sensor has no power left but is still pointing
                     sensor_test_map[sName] = None;  #remove the sensor from target
@@ -78,9 +84,9 @@ class Node(State):
                         if (tName not in sensor_test_map.values()):
                             self.maxT = x_o;               #End max time calculation
 
-        print "Monitored targets for ",self.maxT,"Seconds"
+        #print "Monitored targets for ",self.maxT,"Seconds"
 
-
+        #Path cost is how much an action costs, moving a target would cost
 class dataNode(Node):
     pathList = None;
     unVisited = None;
@@ -90,18 +96,6 @@ class dataNode(Node):
         self.no = no;
 
 
-
-class UndirectedEdge:
-    parent_node = None; child_node = None;
-    def __init__(self,p,c):
-        parent_node = p; child_node = c;
-
-
-    def getChild(node_no):
-        return child_node
-
-    #########
-
 ##Global dictionaries giving the remaining power given a sensor and the euclidean distance given a sensor+target string
 distance_values = {};
 sensors_power = {};
@@ -109,6 +103,7 @@ sensors_power = {};
 nodes = [];
 edges = {};
 no = 0;
+shortest = sys.maxint;
 
 
 min_cost_by_depth = [sys.maxint,sys.maxint,sys.maxint,sys.maxint,sys.maxint]
@@ -140,12 +135,12 @@ def calc_ed(targets,sensors):
 ########### MAIN SEARCH ALGORITHMS + FUNCTIONS INDEPENDENT OF PROBLEMS
 
 def bfs(initialState,problem):
-
+    global total_cost_incurred
     explored = sets.Set()
     front = sets.Set()
 
-    frontier = Queue.Queue()
-    frontier.put(initialState)
+    front_queue = Queue.Queue()
+    front_queue.put(initialState)
     if (problem == "monitor"):
         front.add(str(initialState.sensor_map))
     elif(problem == "aggregation"):
@@ -154,9 +149,10 @@ def bfs(initialState,problem):
         front.add(str(initialState.pancakeOrder))
 
     #While different solutions are still availible
-    while (frontier.empty() == False):
+    while (front_queue.empty() == False):
         #Get the next potential configuration
-        state = frontier.get()
+        state = front_queue.get()
+        total_cost_incurred = total_cost_incurred + state.pathCost
 
 
         #Depending on the problem, record the current node's state
@@ -183,17 +179,17 @@ def bfs(initialState,problem):
                 if(str(n.sensor_map) not in front):
                     if (str(n.sensor_map) not in explored):
                         front.add(str(n.sensor_map));
-                        frontier.put(n);
+                        front_queue.put(n);
+                        #print "NEXT",n.no,"  Sendor Config: ",n.sensor_map, "Action Cost", n.pathCost,"ACT:",n.action
             elif(problem == "aggregation"):
                 if(str(n.pathList) not in front):
                     if (str(n.pathList) not in explored):
                         front.add(str(n.pathList));
-                        frontier.put(n);
-                        print "PUSH",n.no,"  PathList: ",n.pathList, "unvisited", n.unVisited
+                        front_queue.put(n);
+                        #print "PUSH",n.no,"  PathList: ",n.pathList
             elif(problem == "pancake"):
                 explored.add(state.pancakeOrder)
 
-        print frontier.qsize()
 
 
     if (problem == "monitor"):
@@ -201,49 +197,64 @@ def bfs(initialState,problem):
             print "Best Config",best_state_config
             print "Cost(Maximum Monitoring Time)", LongestTime
             print "Time (In Nodes): " ,len(front)
-            print "Space -- Frontier Nodes:",len(front)," Explored Nodes:",len(explored)
+            print "Space -- front_queue Nodes:",len(front)," Explored Nodes:",len(explored)
             return True;
         else:
             print "No configuration found"
             print "Time (In Nodes): " ,len(front)
-            print "Space -- Frontier Nodes:",len(front)," Explored Nodes:",len(explored)
+            print "Space -- front_queue Nodes:",len(front)," Explored Nodes:",len(explored)
             return False;
     elif(problem == "aggregation"):
         if (smallest < sys.maxint):
             print "Best Config",best_state_config
             print "Cost(Smallest Time Delay)", smallest
             print "Time (In Nodes): " ,len(front)
-            print "Space -- Frontier Nodes:",len(front)," Explored Nodes:",len(explored)
+            print "Space -- front_queue Nodes:",len(front)," Explored Nodes:",len(explored)
             return True;
         else:
             print "No configuration found"
             print "Time (In Nodes): " ,len(front)
-            print "Space -- Frontier Nodes:",len(front)," Explored Nodes:",len(explored)
+            print "Space -- front_queue Nodes:",len(front)," Explored Nodes:",len(explored)
             return False;
     elif(problem == "pancake"):
         print "State",state.pathList,state.pathCost,"BFS found goal state"
 
 
-def unicost(initialState, problem):
-    # Utilize a FIFO queue for BFS search and separate into two different problem classes
+def uga(initialState, problem,algo):
 
-    explored = sets.Set()
-    front = sets.Set()
-    frontier = Queue.PriorityQueue()  #Initialize new queue
-    frontier.put((initialState.pathCost,initialState))
+    # Utilize a FIFO queue for BFS search and separate into two different problem classes
+    explored = sets.Set()                   #The set of all potential states that have been explored
+    frontier = sets.Set()                   #The set of all states that have yet to be exploed
+    front_queue = Queue.PriorityQueue()     #Additional PQ
+    if (algo == "ucs"):
+        if (problem == "monitor"):
+            front_queue.put((initialState.pathCost,initialState))
+        elif (problem == "aggregation"):
+            front_queue.put((initialState.sumCost,initialState))
+    elif(algo == "greedy"):
+        score = evaluation_function(initialState,problem);
+        front_queue.put((score,initialState))
+    elif(algo == "astar"):
+        score = evaluation_function(initialState,problem);
+        front_queue.put((score,initialState))
+
+
+    #The sum of the straight line distances between all sensors and targets is a good
 
     if (problem == "monitor"):
-        front.add(str(initialState.sensor_map))
+        frontier.add(str(initialState.sensor_map))
     elif(problem == "aggregation"):
-        front.add(str(initialState.pathList))
+        frontier.add(str(initialState.pathList))
     elif(problem == "pancake"):
-        front.add(str(initialState.pancakeOrder))
+        frontier.add(str(initialState.pancakeOrder))
 
-    while (frontier.empty() == False):  #While a solution is not found
-        st = frontier.get()
+    found = False;
+
+    while (front_queue.empty() == False):      #While there are still states to explore
+        st = front_queue.get()
         state = st[1]
 
-        #Depending on the problem, record the current node's state
+        #Add the current state to the set of explored states
         if (problem == "monitor"):
             explored.add(str(state.sensor_map))
         elif(problem == "aggregation"):
@@ -253,32 +264,69 @@ def unicost(initialState, problem):
 
         #Test if current state is goal state
         if (goal_state(state,problem) == True):
-            if (problem == "monitor"):
-                print "State",state.target_map,state.pathCost,state.depth, "UCS found new best route"
+            if (problem == "monitor"):                  #If it is the goal state
+                print "Found new best config"
+                found = True;
             elif(problem == "aggregation"):
-                print "State",state.pathList,state.pathCost, "UCS found new best route"
-        if (state.pathCost >= smallest):
-            break;
+                print "Found new best route"
 
-        #Get all current state's potential neighbors
+        #The following block looks to see if the best possible state has been found, if not expand on the current node.
+        if (problem == "monitor"):
+            if (algo == "ucs"):
+                if (state.maxT < LongestTime):
+                    break;
+            elif(algo == "greedy"):
+                if ((state.a > 0) & found):
+                    break;
+            elif(algo == "astar"):
+                print "dummy"
+        elif(problem == "aggregation"):
+            if (algo == "ucs"):
+                if (state.pathCost < smallest):
+                    break;
+            elif(algo == "greedy"):
+                if ((state.a > 0) & found):
+                    break;
+            elif(algo == "astar"):
+                print "dummy"
+        elif(problem == "pancake"):
+            print "nada"
+
+        #Expand the current node, aka look for additional states
         SN = neighbor(state,problem)
         for n in SN:
             if (problem == "monitor"):
-                if(str(n.sensor_map) not in front):
-                    if (str(n.sensor_map) not in explored):
-                        front.add(str(n.sensor_map));
-                        frontier.put(n);
-                        print "PUSH",n.no,"  PathList: ",n.sensor_map, "unvisited", n.unVisited, "PC", n.pathCost
+                curr_config = str(n.sensor_map);
+                if((curr_config not in frontier) & (curr_config not in explored)):
+                    front_queue.add(ma);
+                    if(algo == "ucs"):
+                        n.a = 0
+                        frontier.put((n.pathCost,n));
+                    elif(algo == "greedy"):
+                        n.a = evaluation_function(n,problem)
+                        front_queue.put((n.a,n));
+                    elif(algo == "astar"):
+                        n.a = evaluation_function(n,problem)
+                        front_queue.put((n.a+n.pathCost,n));
+
+                    #Debug statement
+                    print "PUSH",n.no,"  Sensor Config: ",n.sensor_map, "ACT:", n.pathCost,"AC:", n.action,n.a,n.a+n.pathCost
             elif(problem == "aggregation"):
                 if(str(n.pathList) not in front):
                     if (str(n.pathList) not in explored):
                         front.add(str(n.pathList));
-                        frontier.put((n.pathCost,n));
-                        print "PUSH",n.no,"  PathList: ",n.pathList, "unvisited", n.unVisited, "PC", n.pathCost
+                        if(algo == "ucs"):
+                            front_queue.put((n.pathCost,n));
+                        elif(algo == "greedy"):
+                            a = evaluation_function(n,problem)
+                            front_queue.put((a,n));
+                        elif(algo == "astar"):
+                            a = evaluation_function(n,problem)
+                            front_queue.put((a+n.pathCost,n));
+                        #print "PUSH",n.no," Path List: ",n.pathList, "AC:", n.pathCost,"ACT:", n.action, "EVAL", a, a+n.pathCost
             elif(problem == "pancake"):
                 explored.add(state.pancakeOrder)
 
-        print frontier.qsize()
 
     if (problem == "monitor"):
         if (LongestTime > 0):
@@ -304,11 +352,6 @@ def unicost(initialState, problem):
             print "Time (In Nodes): " ,len(front)
             print "Space -- Frontier Nodes:",len(front)," Explored NOdes:",len(explored)
             return False;
-    elif(problem == "pancake"):
-        if (solved == True):
-            print "State",state.pathList,state.pathCost
-        else:
-            return False;
 
 def iddfs(initialState,problem):
 
@@ -322,35 +365,43 @@ def iddfs(initialState,problem):
         maxDepth = len(initialState.sensor_map)**len(initialState.target_map)
                 #Number of sensors
         print "MAX DEPTH *******",maxDepth,len(initialState.sensor_map),len(initialState.target_map)
-        print initialState.sensor_map, initialState.target_map
     elif(problem == "aggregation"):
-        maxDepth = len(nodes)
+        maxDepth = len(nodes)+15
+                #Number of sensors
+        print "MAX DEPTH *******",maxDepth
     while (isMore):
         depLimit += 1
         if (depLimit > maxDepth):
             break
         explored = sets.Set()
         front = sets.Set()
-        frontier = Queue.LifoQueue()  #Initialize new queue
-        frontier.put(initialState)
+        front_queue = Queue.LifoQueue()  #Initialize new queue
+        front_queue.put(initialState)
         front.add(initialState)
 
-        while (frontier.empty() == False):  #While a solution is not found
-            state = frontier.get()
+        while (front_queue.empty() == False):  #While a solution is not found
+            state = front_queue.get()
             explored.add(state)
 
-            #print "Current", state.pathList
+            # print "Current", state.pathList
             if (goal_state(state,problem) == True):
                 if (problem == "monitor"):
                     print "State",state.target_map,state.pathCost,state.depth
                     print "Time as expressed in nodes: " ,len(front)
                     print "Space -- Frontier:",len(front)," explored:",len(explored)
-                    print "Cost(expressed as total nodes searched)", shortest
+                    print "Cost(Max Monitoring)", LongestTime
                     return True;
                 elif(problem == "aggregation"):
-                    print "State",state.pathList,state.pathCost
+                    #print "State",state.pathList,state.pathCost
+                    a = 0
             #else:
                 #print state.target_map,"Path Cost",state.pathCost,"Depth",state.depth,"     Out of", depLimit
+            # if (problem == "aggregation"):
+            #     if (state.depth > deepest_depth):
+            #         if (state.pathCost > smallest):
+            #             isMore = False
+            #             break
+
 
             ss = neighbor(state,problem)
             for x in ss:
@@ -359,16 +410,16 @@ def iddfs(initialState,problem):
                         if (x.depth < depLimit):
                             #print "Successor",x.pathList
                             front.add(x);
-                            frontier.put(x);
+                            front_queue.put(x);
                         else:
                             isMore = True;
 
 
 
     if (problem == "monitor"):
-        if (LongestTime > 0):
+        if (LongestTime < 0):
             print "Best Config",best_state_config,"Path Cost",state.pathCost,"Depth",state.depth
-            print "Cost(Maximum Monitoring Time)", LongestTime
+            print "Cost(Maximum Monitoring Time)", LongestTime * -1
             print "Time (In Nodes): " ,len(front)
             print "Space -- Frontier Nodes:",len(front)," Explored NOdes:",len(explored)
             return True;
@@ -378,9 +429,9 @@ def iddfs(initialState,problem):
             print "Space -- Frontier Nodes:",len(front)," Explored NOdes:",len(explored)
             return False;
     elif(problem == "aggregation"):
-        if (shortest < sys.maxint):
+        if (smallest < sys.maxint):
             print "State",state.pathList,state.pathCost,"BFS found goal state"
-            print "Cost(Shortest Time Delay)", shortest
+            print "Cost(Shortest Time Delay)", smallest
             print "Time (In Nodes): " ,len(front)
             print "Space -- Frontier Nodes:",len(front)," Explored NOdes:",len(explored)
             return True;
@@ -388,76 +439,6 @@ def iddfs(initialState,problem):
             print "No configuration found"
             print "Time (In Nodes): " ,len(front)
             print "Space -- Frontier Nodes:",len(front)," Explored NOdes:",len(explored)
-            return False;
-    elif(problem == "pancake"):
-        if (solved == True):
-            print "State",state.pathList,state.pathCost,"BFS found goal state"
-        else:
-            return False;
-
-def greedy(initialState, problem):
-
-    explored = sets.Set()           #New Sets
-    front = sets.Set()
-    select = Queue.Queue()              #Initialize new queue
-    frontier.put(initialState)          #Put initial state
-    front.add(initialState)
-    while (select.empty() == False):  #While a solution is not found
-        state = select.get()
-        explored.add(state)
-        if (goal_state(state,problem) == True):             #Are we in a goal state?
-            if (problem == "monitor"):
-                state.pathCost = evaluation_function()
-                print "State",state.target_map,state.pathCost, "Greedy found best tMap"
-                print "Time as expressed in nodes: " ,len(front)
-                print "Space -- Frontier:",len(front)," explored:",len(explored)
-                print "Cost(expressed as total nodes searched)", shortest
-                return True;
-            elif(problem == "aggregation"): #If the problem is an data aggregation problem
-                state.pathCost = evaluation_function()
-                print "State",state.pathList,state.pathCost, "Greedy found best pathList"
-
-        ss = neighbor(state,problem)                          #Get successors states
-        SmallestStateHeuristic = sys.maxint                                               #
-        for x in ss:                                                    #Go through every potential state
-            if(x not in front):     #If the node is not in the frontier #If the state is listed in the frontier or explored
-                if (x not in explored):                                 #And hasn't been explored
-                    front.add(x);                                       #Put it in the frontier
-                    x.StateHeuristic = evaluation_function(x,problem)          #if the state heuristic is smaller than
-                    if (x.StateHeuristic < SmallestStateHeuristic):
-                        SmallestStateHeuristic = x.StateHeuristic
-                        select.put(x)                    #Only put it in the queue if it is the smallest state heuristic
-
-
-
-    if (problem == "monitor"):
-        if (LongestTime > 0):
-            print "Best Config",best_state_config,"Path Cost",state.pathCost,"Depth",state.depth
-            print "Cost(Maximum Monitoring Time)", LongestTime
-            print "Time (In Nodes): " ,len(front)
-            print "Space -- Frontier Nodes:",len(front)," Explored NOdes:",len(explored)
-            return True;
-        else:
-            print "No configuration found"
-            print "Time (In Nodes): " ,len(front)
-            print "Space -- Frontier Nodes:",len(front)," Explored NOdes:",len(explored)
-            return False;
-    elif(problem == "aggregation"):
-        if (shortest < sys.maxint):
-            print "State",state.pathList,state.pathCost,"BFS found goal state"
-            print "Cost(Shortest Time Delay)", shortest
-            print "Time (In Nodes): " ,len(front)
-            print "Space -- Frontier Nodes:",len(front)," Explored NOdes:",len(explored)
-            return True;
-        else:
-            print "No configuration found"
-            print "Time (In Nodes): " ,len(front)
-            print "Space -- Frontier Nodes:",len(front)," Explored NOdes:",len(explored)
-            return False;
-    elif(problem == "pancake"):
-        if (solved == True):
-            print "State",state.pathList,state.pathCost,"BFS found goal state"
-        else:
             return False;
 
 
@@ -467,13 +448,14 @@ def goal_state(current, problem):
     global LongestTime;
 
     global smallest;
+    global total_cost_incurred
+    global shortest;
 
     global deepest_depth;
     if(problem == "monitor"):           #The goal state for the monitor problem
 
         t_map = current.target_map      #Is a configuration where the sum of the power loss function
         t_keys = t_map.keys()           #For all four sensors is at a minimums
-
 
         for t in t_keys:        #Make sure all targets are covered - If not, no point
             if (t_map[t] == None):
@@ -482,51 +464,52 @@ def goal_state(current, problem):
         if (current.maxT > LongestTime):  #If it exceeds the longest record time, set as new record
             LongestTime = current.maxT;
             best_state_config = current.sensor_map;
+            total_cost_incurred = current.sumCost;
             return True;
         else:               #Else continue on
             return False;
-
-
 
     elif(problem == "aggregation"):
 
         if (len(current.unVisited) == 0):
             if(current.pathCost < smallest):
                 smallest = current.pathCost
+                deepest_depth = current.depth
                 best_state_config = list(current.pathList)
                 return True;
         else:
             return False;
 
-    elif(problem == "pancake"):
-        pancake_list = current.pancake_list
-        if (pancake_list == pcl):
-            return True;
-        else:
-            return False;
+
 
 def neighbor(current, problem):
     #Neighbor function acts as an expand function, all this function does is generate
     #All the possible next states given the current state
 
     successors = sets.Set();
-
-    if(problem == "monitor"):           #For monitor problem
+    global no
+    if(problem == "monitor"):
         t_map = current.target_map      #Map target(t) --> sensor
         s_map = current.sensor_map      #Map of sensor(s) --> target
         t_keys = t_map.keys()
         s_keys = s_map.keys()
+        #print "CURR",current.no,"  PathList: ",s_map,"SUM", current.sumCost, current.a
         global distance_values
-        global power_consumption
-        for s in s_keys:            #Go through each sensor and target  1,2,3,4
-            for t in t_keys:                #Go through each target  1,2,3
-                if (s_map[s] != t): #If the current sensor is already watching the target, don't include
-                    newS_map = s_map.copy()
-                    newT_map = t_map.copy()
-                    newS_map[s] = t
-                    newT_map[t] = s
-                    ed = distance_values[s+t]
-                    successors.add(Node(newT_map,newS_map,current,current.depth,current.pathCost + ed))
+        global total_cost_incurred
+        global power_consumption        # 1->1,2,3,4
+        for t in t_keys:
+            for s in s_keys:            #Go through each sensor
+                if (t_map[t] == None): #Only if sensor is not assigned
+                    if(s_map[s] == None):
+                        newS_map = s_map.copy()
+                        newT_map = t_map.copy()
+                        newS_map[s] = t
+                        newT_map[t] = s
+                        action = s+t
+                        no += 1
+                        a = Node(newT_map,newS_map,current.depth,distance_values[s+t],no,action)
+                        a.sumCost = current.sumCost + distance_values[s+t]
+                        successors.add(a)
 
 
 
@@ -538,12 +521,9 @@ def neighbor(current, problem):
         depth = current.depth
         active = current.active
 
-
-        global no
-
         global nodes
         global edges
-        print "POP",current.no,"  PathList: ",pathList, " Unvisited:  ", unvisited, "PC", pathCost
+        #print "POP",current.no,"  PathList: ",pathList, " Unvisited:  ", unvisited, "PC", pathCost
 
         for y in nodes:
             if(active == None):
@@ -566,23 +546,25 @@ def neighbor(current, problem):
                 no += 1
                 successors.add(dataNode(pl,uv,ac,pc,depth,no));
 
-    elif(problem == "pancake"):
-        print "hi"
-
-
-
     return successors;
 def evaluation_function(state, problem):
+    global nodes
+    global data_distances
     if(problem == "monitor"): #For monitor problem, the heuristic would find the
-        t_map = state.target_map;                   #Calculates the heurisitic for maximum output
-
-
+        t_map = state.target_map
+        t_keys = t_map.keys()
+        x = 0;
+        for key in t_keys:
+            if (t_map[key] == None):
+                x += 1;
+        return x;
+        #The states with the fewest missing targets will be next
     elif(problem == "aggregation"):
-        print "zing"
-
-
-
-
+        #Greedy function is the configuration with the smallest total distance from eachotgher\
+        for x in nodes:
+            if (state.active != None):
+                if (state.active+x[0] in edges):
+                    return data_distances[state.active+x[0]];
 #### MAIN FUNCTION
 
 def main():
@@ -630,7 +612,7 @@ def main():
                     distance_values[s[v].name+t[w].name] = distance.euclidean(a,b)
 
             no += 1
-            initialState = Node(original_target_map,original_sensor_map,None,0,0,no)
+            initialState = Node(original_target_map,original_sensor_map,0,0,no,None)
         elif (lines[0] == "aggregation"):
 
             node_list = list(ast.literal_eval(lines[1]))
@@ -643,6 +625,12 @@ def main():
 
             for a in node_list: #for each node, append it to the list of nodes
                 nodes.append((a[0],a[1],a[2]))
+
+            for y in nodes:
+                for x in nodes:
+                    if (x != y):
+                        data_distances[x[0]+y[0]] = distance.euclidean((x[1],x[2]),(y[1],y[2]))
+            #print data_distances
 
             for b in edge_list:
                 edges[b[0]+b[1]] = b[2]
@@ -657,18 +645,15 @@ def main():
     f.close()
     if (algo == "bfs"):
         if (bfs(initialState,lines[0])):
-            print "done"
-    elif(algo == "ucs"):
-        if (unicost(initialState,lines[0])):
-            print "done"
+            a = 0
     elif(algo == "iddfs"):
         if (iddfs(initialState,lines[0])):
-            print "done"
+            a = 0
+    elif((algo == "ucs") | (algo == "greedy") | (algo == "astar")):
+        if (uga(initialState,lines[0],algo)):
+            a = 0
 
-    elif (algo == "greedy"):
-        if (greedy(initialState,lines[0])):
-            print("Finished")
-    # elif (algo == "Astar"):
+    # elif (algo == "astar"):
     #     endState = astar(initialState)
     #     print endState.display()
 
