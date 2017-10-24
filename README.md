@@ -16,8 +16,8 @@
   4. greedy - Greedy local search
   5. a* - A* search 
 ### Dependencies
-Python Interpreter (Used version 2.7.1)
-Configuration file (examples listed in /examples)
+Python Interpreter (Version 2.7.1)
+\*.config file (/examples)
 
 #### Problem Types
   There are three problem types listed in the PuzzleSolver application: 
