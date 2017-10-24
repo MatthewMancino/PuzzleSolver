@@ -7,7 +7,7 @@
  
 
 ### Synopsis
-  '''python puzzlesolver.py [algorithm_used] [configuration_file]'''
+  ```python puzzlesolver.py [algorithm_used] [configuration_file]```
     
   The following options for [algorithm_used] can be one of the following:
   1. bfs - Breadth-first search (
