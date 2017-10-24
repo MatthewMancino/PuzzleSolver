@@ -17,7 +17,7 @@
   5. a* - A* search 
 ### Dependencies
 Python Interpreter (Version 2.7.1)
-\*.config file (/examples)
+  \*.config file (/examples)
 
 #### Problem Types
   There are three problem types listed in the PuzzleSolver application: 
