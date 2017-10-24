@@ -1,7 +1,7 @@
 # PuzzleSolver
 ### Description
    This command line tool illustrates the five most commonly-used searching algorithms for state-space search in modern 
-   artificial intelligence. Three algorithms represent uninformed search, while two represent informed searches.
+   artificial intelligence. Three algorithms represent uninformed search, while two represent informed searches. You can read    more about state-space search (https://en.wikipedia.org/wiki/State_space_search).
    
    There are also three different types of problems solved by the algorithms, as displayed here.
  
